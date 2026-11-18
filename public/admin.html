@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+  <meta name="theme-color" content="#14151f">
+  <title>En una nota de Loba· Anfitrión</title>
+  <link rel="stylesheet" href="/css/styles.css">
+</head>
+<body class="admin-body">
+
+  <!-- PIN -->
+  <section id="pin-screen" class="screen center-screen">
+    <div class="card">
+      <h2>Panel del anfitrión</h2>
+      <input id="pin" type="password" inputmode="numeric" maxlength="8" placeholder="PIN" autocomplete="off">
+      <button id="pin-btn" class="btn btn-primary btn-big">Entrar</button>
+      <p id="pin-error" class="error"></p>
+    </div>
+  </section>
+
+  <section id="panel" class="screen hidden">
+
+    <!-- Lobby del admin -->
+    <div id="lobby-view" class="view">
+      <h2 class="view-title">Lobby · <span id="lobby-count">0</span> listos</h2>
+      <ul id="lobby-list" class="lobby-list"></ul>
+      <button id="start-btn" class="btn btn-primary btn-big btn-start">INICIAR JUEGO</button>
+    </div>
+
+    <!-- Juego del admin -->
+    <div id="game-view" class="view hidden">
+      <header class="top-bar">
+        <span id="round-label">Ronda 1</span>
+        <button id="endgame-btn" class="btn btn-small">Volver al lobby</button>
+      </header>
+
+      <div id="alert" class="alert hidden">🔔 ¡ALGUIEN TOCÓ! Pausá la música</div>
+
+      <main class="main">
+        <ol id="queue" class="queue"></ol>
+        <p id="queue-empty" class="muted center-text"></p>
+
+        <div id="answer-box" class="answer-box hidden">
+          <p class="answer-title">Turno de <strong id="first-name"></strong></p>
+          <button id="correct-btn" class="btn btn-correct btn-big">✅ Acertó (+1 pt)</button>
+          <button id="wrong-btn" class="btn btn-wrong btn-big">❌ Erró (-1 pt)</button>
+        </div>
+      </main>
+
+      <footer class="footer">
+        <button id="next-btn" class="btn btn-primary btn-big">Siguiente Canción / Nueva Ronda</button>
+        <details id="scores">
+          <summary>🏆 Tabla de posiciones</summary>
+          <ul id="score-list" class="score-list"></ul>
+        </details>
+      </footer>
+    </div>
+  </section>
+
+  <script src="/socket.io/socket.io.js"></script>
+  <script src="/js/admin.js"></script>
+</body>
+</html>
