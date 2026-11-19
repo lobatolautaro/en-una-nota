@@ -147,7 +147,7 @@ function render() {
     text = 'Eliminado de esta ronda. Esperá la siguiente canción';
   } else if (pos >= 0) {
     cls = 'state-queued';
-    text = `¡Apretaste! Estás ${pos + 1}° en la cola`;
+    text = `¡Apretaste! Estás ${pos + 1}° para adivinar`;
   } else if (state.roundLocked) {
     cls = 'state-locked';
     text = 'Ya hay ganador de esta canción. Esperá la siguiente';
