@@ -3,6 +3,7 @@ const http = require('http');
 const path = require('path');
 const os = require('os');
 const { Server } = require('socket.io');
+const fs = require('fs');
 
 const PORT = Number(process.env.PORT) || 3000;   // Render/Railway inyectan PORT
 const HOST = '0.0.0.0';
@@ -17,10 +18,33 @@ const server = http.createServer(app);
 // Pings más relajados: mantienen viva la conexión a través de proxies y redes móviles
 const io = new Server(server, { pingInterval: 20_000, pingTimeout: 30_000 });
 
+// ---------- Archivos estáticos ----------
 const PUBLIC_DIR = path.join(__dirname, 'public');
-app.use(express.static(PUBLIC_DIR));
+// Verificación al arrancar: avisa en la terminal si falta algún archivo
+const REQUIRED_FILES = [
+  'index.html',
+  'admin.html',
+  'css/styles.css',
+  'js/player.js',
+  'js/admin.js',
+];
+const missing = REQUIRED_FILES.filter(f => !fs.existsSync(path.join(PUBLIC_DIR, f)));
+if (missing.length) {
+  console.error('\n⚠️  Faltan archivos en public/:');
+  missing.forEach(f => console.error(`   - public/${f}`));
+  console.error('   Revisá la estructura de carpetas (ver README).\n');
+}
+// Sirve todo lo que esté dentro de public/ (css, js, imágenes)
+app.use(express.static(PUBLIC_DIR, { index: false }));
+// Vistas
+app.get('/', (req, res) => res.sendFile(path.join(PUBLIC_DIR, 'index.html')));
 app.get('/admin', (req, res) => res.sendFile(path.join(PUBLIC_DIR, 'admin.html')));
-app.get('/healthz', (req, res) => res.send('ok'));  // para monitores tipo UptimeRobot
+app.get('/healthz', (req, res) => res.send('ok'));
+// Si un asset no existe, responder texto plano con la ruta exacta (así el error es claro)
+app.use('/js', (req, res) =>
+  res.status(404).type('text/plain').send(`No existe public/js${req.path}`));
+app.use('/css', (req, res) =>
+  res.status(404).type('text/plain').send(`No existe public/css${req.path}`));
 
 // ---------- Estado (en memoria) ----------
 const game = {
