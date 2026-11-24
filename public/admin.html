@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
   <meta name="theme-color" content="#14151f">
-  <title>En una nota de Loba· Anfitrión</title>
+  <title>En una nota · Anfitrión</title>
   <link rel="stylesheet" href="/css/styles.css">
 </head>
 <body class="admin-body">
@@ -21,25 +21,32 @@
 
   <section id="panel" class="screen hidden">
 
-    <!-- Lobby del admin -->
+    <!-- Lobby -->
     <div id="lobby-view" class="view">
       <h2 class="view-title">Lobby · <span id="lobby-count">0</span> listos</h2>
+      <p id="songs-count" class="muted center-text"></p>
       <ul id="lobby-list" class="lobby-list"></ul>
       <button id="start-btn" class="btn btn-primary btn-big btn-start">INICIAR JUEGO</button>
     </div>
 
-    <!-- Juego del admin -->
+    <!-- Juego -->
     <div id="game-view" class="view hidden">
       <header class="top-bar">
-        <span id="round-label">Ronda 1</span>
+        <div class="top-left">
+          <span id="round-label">Ronda 1</span>
+          <span id="round-clock" class="round-clock">--</span>
+        </div>
         <button id="endgame-btn" class="btn btn-small">Volver al lobby</button>
       </header>
 
       <div id="alert" class="alert hidden">🔔 ¡ALGUIEN TOCÓ! Pausá la música</div>
+      <div id="winner-banner" class="winner-banner hidden"></div>
 
       <main class="main">
+        <div id="song-card" class="song-card"></div>
+        <p id="round-status" class="round-status"></p>
+        <div id="elim-box" class="elim-box"></div>
         <ol id="queue" class="queue"></ol>
-        <p id="queue-empty" class="muted center-text"></p>
 
         <div id="answer-box" class="answer-box hidden">
           <p class="answer-title">Turno de <strong id="first-name"></strong></p>
@@ -49,16 +56,44 @@
       </main>
 
       <footer class="footer">
+        <button id="start-round-btn" class="btn btn-go btn-big">▶ INICIAR RONDA</button>
         <button id="next-btn" class="btn btn-primary btn-big">Siguiente Canción / Nueva Ronda</button>
+        <button id="force-finish-btn" class="btn btn-small btn-ghost">⏹ Terminar partida ya</button>
+
+
+        <details id="songs-details">
+          <summary id="songs-summary">🎵 Canciones</summary>
+          <label class="sort-row">Ordenar por
+            <select id="songs-sort">
+              <option value="orden">Orden original</option>
+              <option value="titulo">Título (A-Z)</option>
+              <option value="artista">Artista (A-Z)</option>
+            </select>
+          </label>
+          <ol id="songs-ol" class="songs-ol"></ol>
+        </details>
+
+
         <details id="scores">
           <summary>🏆 Tabla de posiciones</summary>
           <ul id="score-list" class="score-list"></ul>
         </details>
       </footer>
     </div>
+
+    <!-- Tabla final -->
+    <div id="final-view" class="view hidden">
+      <h2 class="view-title">🏆 Tabla final</h2>
+      <p id="final-headline" class="final-headline"></p>
+      <ol id="final-list" class="final-list"></ol>
+      <button id="newgame-btn" class="btn btn-go btn-big">🔄 Nueva partida (puntajes en 0)</button>
+      <button id="final-lobby-btn" class="btn btn-primary btn-big">Volver al lobby</button>
+    </div>
   </section>
 
   <script src="/socket.io/socket.io.js"></script>
-  <script src="/js/admin.js"></script>
+  <script src="/js/admin.js?v=6"></script>
 </body>
 </html>
+
+

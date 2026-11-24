@@ -4,14 +4,14 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
   <meta name="theme-color" content="#1d1f2b">
-  <title>En una nota de Loba· Jugador</title>
+  <title>En una nota · Jugador</title>
   <link rel="stylesheet" href="/css/styles.css">
 </head>
 <body>
 
   <!-- Lobby -->
   <section id="lobby" class="screen lobby-screen">
-    <h1>En una nota de Loba</h1>
+    <h1>En una nota</h1>
 
     <div id="join-form" class="card">
       <input id="name" maxlength="20" placeholder="Tu nombre" autocomplete="off">
@@ -31,11 +31,26 @@
     <div id="score-badge" class="score-badge">Puntaje: <strong id="my-score">0</strong></div>
     <div id="pad" class="pad state-active">
       <div id="pad-text" class="pad-text">¡TOCÁ!</div>
+      <div id="pad-extra" class="pad-extra hidden">
+        <img id="song-cover" class="song-cover hidden" alt="Tapa de la canción">
+        <p id="song-title" class="song-title"></p>
+        <p id="song-artist" class="song-artist"></p>
+        <p id="pad-hint" class="pad-hint"></p>
+      </div>
     </div>
   </section>
 
+  <!-- Tabla final -->
+  <section id="final" class="screen final-screen hidden">
+    <h1>🏆 Resultados finales</h1>
+    <p id="final-headline" class="final-headline"></p>
+    <ol id="final-list" class="final-list"></ol>
+    <p class="muted center-text">Gracias por jugar. Esperá a que el anfitrión arme una nueva partida.</p>
+  </section>
+
   <script src="/socket.io/socket.io.js"></script>
-  <script src="/js/player.js?v=2"></script>
+  <script src="/js/player.js?v=6"></script>
 </body>
 </html>
+
 

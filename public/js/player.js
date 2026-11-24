@@ -4,13 +4,14 @@ const $ = (id) => document.getElementById(id);
 const STORAGE_KEY = 'en-una-nota:jugador';
 const PAD = $('pad');
 const PAD_TEXT = $('pad-text');
+const EXTRA = $('pad-extra');
+const COVER = $('song-cover');
 
 let state = null;
-let me = loadSaved();   // { playerId, name }
+let me = loadSaved();
 let joinTimer = null;
+let lastList = ''; 
 
-// crypto.randomUUID solo existe en contextos seguros (https o localhost).
-// En http://192.168.x.x no está disponible, por eso hay un fallback.
 function makeId() {
   if (window.crypto && typeof window.crypto.randomUUID === 'function') {
     return window.crypto.randomUUID();
@@ -22,7 +23,7 @@ function loadSaved() {
   try {
     const data = JSON.parse(localStorage.getItem(STORAGE_KEY));
     if (data && data.playerId) return data;
-  } catch (e) { /* storage no disponible o corrupto */ }
+  } catch (e) {}
   return { playerId: makeId(), name: '' };
 }
 
@@ -41,7 +42,7 @@ function setJoinError(msg) {
   $('join-error').textContent = msg || '';
 }
 
-// ---------- Lobby: "Listo" y reconexión ----------
+// ---------- Lobby ----------
 function join(nameFromInput) {
   const typed = (nameFromInput ?? $('name').value).trim();
   const name = typed || me.name;
@@ -50,7 +51,6 @@ function join(nameFromInput) {
 
   $('ready-btn').disabled = true;
 
-  // Si el servidor no responde en 5 s, liberamos el botón
   clearTimeout(joinTimer);
   joinTimer = setTimeout(() => {
     $('ready-btn').disabled = false;
@@ -75,7 +75,6 @@ function join(nameFromInput) {
 $('ready-btn').addEventListener('click', () => join());
 $('name').addEventListener('keydown', (e) => { if (e.key === 'Enter') join(); });
 
-// Cada vez que se (re)conecta, si ya tenemos nombre, reanunciamos al jugador
 socket.on('connect', () => {
   if (me.name) join(me.name);
 });
@@ -83,7 +82,7 @@ socket.on('connect', () => {
 // ---------- Pulsador ----------
 PAD.addEventListener('pointerdown', (e) => {
   e.preventDefault();
-  if (!state) return;
+  if (!state || !state.roundStarted) return;
   const mine = findMe();
   if (!mine || mine.status !== 'active' || state.roundLocked) return;
   if (state.queue.some(q => q.id === me.playerId)) return;
@@ -102,23 +101,56 @@ function findMe() {
   return state.players.find(p => p.id === me.playerId);
 }
 
+const SCREENS = ['lobby', 'game', 'final'];
+
 function showScreen(name) {
-  $('lobby').classList.toggle('hidden', name !== 'lobby');
-  $('game').classList.toggle('hidden', name !== 'game');
+  for (const s of SCREENS) {
+    const el = $(s);
+    if (el) el.classList.toggle('hidden', s !== name);
+  }
+}
+
+// Muestra tapa, canción y artista solo cuando hay ganador
+function showWinnerInfo(w) {
+  if (!w) {
+    EXTRA.classList.add('hidden');
+    return;
+  }
+  EXTRA.classList.remove('hidden');
+
+  const s = w.song;
+  $('song-title').textContent = s ? s.titulo : '';
+  $('song-artist').textContent = s ? s.artista : '';
+  $('pad-hint').textContent = 'Esperá la siguiente canción';
+
+    if (s && s.tapa) {
+    COVER.onerror = () => COVER.classList.add('hidden');
+    if (COVER.getAttribute('src') !== s.tapa) COVER.src = s.tapa;   // evita recargas
+    COVER.classList.remove('hidden');
+  } else {
+    COVER.removeAttribute('src');
+    COVER.classList.add('hidden');
+  }
 }
 
 function render() {
+    // La fase final tiene prioridad sobre todo lo demás
+  if (state.phase === 'finished') {
+    showScreen('final');
+    renderFinal();
+    return;
+  }
   const mine = findMe();
 
-  $('player-list').innerHTML = state.players.length
-    ? state.players.map(p => `
-        <li>
-          ${p.id === me.playerId ? '⭐ ' : ''}${esc(p.name)}
-          ${p.online ? '' : ' <small class="muted">(desconectado)</small>'}
-        </li>`).join('')
+  let lastList = '';
+  const listHtml = state.players.length
+    ? state.players.map(p => `<li>${p.id === me.playerId ? '⭐ ' : ''}${esc(p.name)}${p.online ? '' : ' <small class="muted">(desconectado)</small>'}</li>`).join('')
     : '<li class="muted">Todavía nadie</li>';
+  if (listHtml !== lastList) {
+    $('player-list').innerHTML = listHtml;
+    lastList = listHtml;
+  }
 
-  // Todavía no estoy en la partida: mostrar formulario
   if (!mine) {
     showScreen('lobby');
     $('join-form').classList.remove('hidden');
@@ -127,7 +159,6 @@ function render() {
     return;
   }
 
-  // Estoy en la partida, fase lobby: esperando
   if (state.phase === 'lobby') {
     showScreen('lobby');
     $('join-form').classList.add('hidden');
@@ -135,22 +166,30 @@ function render() {
     return;
   }
 
-  // Partida en curso: pantalla de juego
   showScreen('game');
   $('my-score').textContent = mine.score;
 
   const pos = state.queue.findIndex(q => q.id === me.playerId);
+  const hasWinner = state.roundLocked && state.winner;
   let cls, text;
 
-  if (mine.status === 'eliminated') {
+  if (hasWinner) {
+    if (state.winner.id === me.playerId) {
+      cls = 'state-winner';
+      text = '¡Ganaste la ronda!';
+    } else {
+      cls = 'state-locked';
+      text = `Ganó ${state.winner.name}`;
+    }
+  } else if (mine.status === 'eliminated') {
     cls = 'state-eliminated';
     text = 'Eliminado de esta ronda. Esperá la siguiente canción';
   } else if (pos >= 0) {
     cls = 'state-queued';
     text = `¡Apretaste! Estás ${pos + 1}° para adivinar`;
-  } else if (state.roundLocked) {
-    cls = 'state-locked';
-    text = 'Ya hay ganador de esta canción. Esperá la siguiente';
+  } else if (!state.roundStarted) {
+    cls = 'state-wait';
+    text = 'Esperá la señal del anfitrión';
   } else {
     cls = 'state-active';
     text = '¡TOCÁ!';
@@ -158,6 +197,30 @@ function render() {
 
   PAD.className = `pad ${cls}`;
   PAD_TEXT.textContent = text;
+  showWinnerInfo(hasWinner ? state.winner : null);
+}
+function renderFinal() {
+  const list = state.standings || [];
+  const leaders = list.filter(s => s.rank === 1);
+  $('final-headline').textContent = !list.length
+    ? 'Sin jugadores'
+    : leaders.length === 1
+      ? `Ganó ${leaders[0].name}`
+      : 'Empate en el primer puesto';
+  $('final-list').innerHTML = list.length
+    ? list.map(s => `
+        <li class="final-row ${s.id === me.playerId ? 'me' : ''}">
+          <span class="fpos">${medal(s.rank)}</span>
+          <span class="fname">${esc(s.name)}${s.id === me.playerId ? ' (vos)' : ''}</span>
+          <span class="fpts">${s.score} pts</span>
+        </li>`).join('')
+    : '<li class="muted">Sin jugadores</li>';
+}
+function medal(rank) {
+  if (rank === 1) return '🥇';
+  if (rank === 2) return '🥈';
+  if (rank === 3) return '🥉';
+  return `${rank}°`;
 }
 
 function esc(str) {
@@ -165,3 +228,5 @@ function esc(str) {
   d.textContent = str;
   return d.innerHTML;
 }
+
+
